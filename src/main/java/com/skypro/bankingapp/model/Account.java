@@ -3,6 +3,7 @@ package com.skypro.bankingapp.model;
 import java.util.Objects;
 
 public class Account {
+
   private final String accountNumber;
   private double balance;
   private final Currency currency;
