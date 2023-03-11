@@ -5,16 +5,19 @@ import com.skypro.bankingapp.exception.AccountNotFoundException;
 import com.skypro.bankingapp.exception.InsufficientFundsException;
 import com.skypro.bankingapp.exception.InvalidChangeAmountException;
 import com.skypro.bankingapp.model.Account;
+import com.skypro.bankingapp.model.Currency;
 import com.skypro.bankingapp.model.User;
+import com.skypro.bankingapp.repository.AccountRepository;
+import java.util.UUID;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AccountService {
 
-  private final UserService userService;
+  private final AccountRepository accountRepository;
 
-  public AccountService(UserService userService) {
-    this.userService = userService;
+  public AccountService(AccountRepository accountRepository) {
+    this.accountRepository = accountRepository;
   }
 
   public void changeBalance(
@@ -22,11 +25,10 @@ public class AccountService {
     if (amount <= 0) {
       throw new InvalidChangeAmountException();
     }
-    User user = userService.getUser(username);
     Account account =
-        user.getAccounts().stream()
-            .filter(acc -> acc.getAccountNumber().equals(accountNumber))
-            .findFirst()
+        accountRepository
+            .findById(accountNumber)
+            .filter(acc -> acc.getUser().getUsername().equals(username))
             .orElseThrow(AccountNotFoundException::new);
     if (operation.equals(Operation.DEPOSIT)) {
       depositOnAccount(account, amount);
@@ -35,11 +37,17 @@ public class AccountService {
     }
   }
 
+  public Account createAccount(User user, Currency currency) {
+    Account account = new Account(UUID.randomUUID().toString(), 0.0, currency);
+    account.setUser(user);
+    accountRepository.save(account);
+    return account;
+  }
+
   public AccountDTO getAccount(String username, String accountNumber) {
-    User user = userService.getUser(username);
-    return user.getAccounts().stream()
-        .filter(acc -> acc.getAccountNumber().equals(accountNumber))
-        .findFirst()
+    return accountRepository
+        .findById(accountNumber)
+        .filter(acc -> acc.getUser().getUsername().equals(username))
         .map(AccountDTO::fromAccount)
         .orElseThrow(AccountNotFoundException::new);
   }

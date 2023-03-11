@@ -4,13 +4,29 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
+import javax.persistence.Table;
 
+@Entity
+@Table(name = "users")
 public class User {
+
+  @Id
+  private String username;
+  @Column(nullable = false, length = 64)
   private String firstName;
+  @Column(nullable = false, length = 64)
   private String lastName;
-  private final String username;
+  @Column(nullable = false)
   private String password;
+  @OneToMany(mappedBy = "user")
   private final Set<Account> accounts = new HashSet<>();
+
+  public User() {
+  }
 
   public User(String firstName, String lastName, String username, String password) {
     this.firstName = firstName;
@@ -53,6 +69,10 @@ public class User {
 
   public void addAccount(Account account) {
     this.accounts.add(account);
+  }
+
+  public void setUsername(String username) {
+    this.username = username;
   }
 
   @Override

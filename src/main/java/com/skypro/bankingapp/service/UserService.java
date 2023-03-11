@@ -5,81 +5,64 @@ import com.skypro.bankingapp.dto.request.CreateUserRequest;
 import com.skypro.bankingapp.exception.InvalidPasswordException;
 import com.skypro.bankingapp.exception.UserAlreadyExistsException;
 import com.skypro.bankingapp.exception.UserNotFoundException;
-import com.skypro.bankingapp.model.Account;
 import com.skypro.bankingapp.model.Currency;
 import com.skypro.bankingapp.model.User;
+import com.skypro.bankingapp.repository.UserRepository;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
 public class UserService {
 
-  private final Map<String, User> users = new HashMap<>();
+  private final UserRepository userRepository;
+  private final AccountService accountService;
+
+  public UserService(UserRepository userRepository, AccountService accountService) {
+    this.userRepository = userRepository;
+    this.accountService = accountService;
+  }
 
   public UserDTO addUser(CreateUserRequest request) {
-    if (users.containsKey(request.username())) {
+
+    if (userRepository.findById(request.username()).isPresent()) {
       throw new UserAlreadyExistsException();
     }
     validateUser(request);
-    User user = request.toUser();
-    users.put(user.getUsername(), user);
-    return UserDTO.fromUser(createNewUserAccounts(user));
+    User user = userRepository.save(request.toUser());
+    createNewUserAccounts(user);
+    return UserDTO.fromUser(user);
   }
 
   private void validateUser(CreateUserRequest request) {
   }
 
-  public User updateUser(String username, String firstName, String lastName) {
-    if (!users.containsKey(username)) {
-      throw new UserNotFoundException();
-    }
-    User user = users.get(username);
-    user.setFirstName(firstName);
-    user.setLastName(lastName);
-
-    return user;
-  }
-
   public void updatePassword(String username, String password, String newPassword) {
-    if (!users.containsKey(username)) {
-      throw new UserNotFoundException();
-    }
-
-    User user = users.get(username);
+    User user = userRepository.findById(username).orElseThrow(UserNotFoundException::new);
     if (!user.getPassword().equals(password)) {
       throw new InvalidPasswordException();
     }
-
     user.setPassword(newPassword);
+    userRepository.save(user);
   }
 
   public void removeUser(String username) {
-    if (!users.containsKey(username)) {
-      throw new UserNotFoundException();
-    }
-    users.remove(username);
+    User user = userRepository.findById(username).orElseThrow(UserNotFoundException::new);
+    userRepository.delete(user);
   }
 
   public User getUser(String username) {
-    if (!users.containsKey(username)) {
-      throw new UserNotFoundException();
-    }
-    return users.get(username);
+    return userRepository.findById(username).orElseThrow(UserNotFoundException::new);
   }
 
   public Collection<UserDTO> getAllUsers() {
-    return users.values().stream().map(UserDTO::fromUser).collect(Collectors.toList());
+    return userRepository.findAll().stream().map(UserDTO::fromUser).collect(Collectors.toList());
   }
 
   private User createNewUserAccounts(User user) {
-    user.addAccount(new Account(UUID.randomUUID().toString(), 0.0, Currency.RUB));
-    user.addAccount(new Account(UUID.randomUUID().toString(), 0.0, Currency.EUR));
-    user.addAccount(new Account(UUID.randomUUID().toString(), 0.0, Currency.USD));
-
+    user.addAccount(accountService.createAccount(user, Currency.RUB));
+    user.addAccount(accountService.createAccount(user, Currency.USD));
+    user.addAccount(accountService.createAccount(user, Currency.EUR));
     return user;
   }
 }

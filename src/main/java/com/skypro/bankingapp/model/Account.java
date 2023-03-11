@@ -1,13 +1,30 @@
 package com.skypro.bankingapp.model;
 
 import java.util.Objects;
+import javax.persistence.Column;
+import javax.persistence.Entity;
+import javax.persistence.EnumType;
+import javax.persistence.Enumerated;
+import javax.persistence.Id;
+import javax.persistence.ManyToOne;
+import javax.persistence.Table;
 
+@Entity
+@Table(name = "accounts")
 public class Account {
 
-  private final String accountNumber;
+  @Id
+  private String accountNumber;
+  @Column(nullable = false)
   private double balance;
-  private final Currency currency;
+  @Column(nullable = false, updatable = false)
+  @Enumerated(EnumType.STRING)
+  private Currency currency;
+  @ManyToOne(optional = false)
+  private User user;
 
+  public Account() {
+  }
 
   public Account(String accountNumber, double balance, Currency currency) {
     this.accountNumber = accountNumber;
@@ -17,6 +34,10 @@ public class Account {
 
   public String getAccountNumber() {
     return accountNumber;
+  }
+
+  public void setAccountNumber(String accountNumber) {
+    this.accountNumber = accountNumber;
   }
 
   public double getBalance() {
@@ -29,6 +50,18 @@ public class Account {
 
   public Currency getCurrency() {
     return currency;
+  }
+
+  public void setCurrency(Currency currency) {
+    this.currency = currency;
+  }
+
+  public User getUser() {
+    return user;
+  }
+
+  public void setUser(User user) {
+    this.user = user;
   }
 
   @Override
