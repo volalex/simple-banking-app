@@ -5,10 +5,14 @@ import com.skypro.bankingapp.exception.AccountNotFoundException;
 import com.skypro.bankingapp.exception.InsufficientFundsException;
 import com.skypro.bankingapp.exception.InvalidChangeAmountException;
 import com.skypro.bankingapp.model.Account;
+import com.skypro.bankingapp.model.Comparison;
 import com.skypro.bankingapp.model.Currency;
 import com.skypro.bankingapp.model.User;
 import com.skypro.bankingapp.repository.AccountRepository;
+import com.skypro.bankingapp.repository.AccountSpecifications;
+import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -50,6 +54,15 @@ public class AccountService {
         .filter(acc -> acc.getUser().getUsername().equals(username))
         .map(AccountDTO::fromAccount)
         .orElseThrow(AccountNotFoundException::new);
+  }
+
+  public List<AccountDTO> getAccountsByCurrencyAndComparison(Currency currency,
+      Comparison comparison, double value) {
+    return accountRepository.findAll(AccountSpecifications.hasCurrency(currency)
+            .and(AccountSpecifications.hasBalanceBasedOnComparison(comparison, value)))
+        .stream()
+        .map(AccountDTO::fromAccount)
+        .collect(Collectors.toList());
   }
 
   private void withdrawFromAccount(Account account, double amount) {
